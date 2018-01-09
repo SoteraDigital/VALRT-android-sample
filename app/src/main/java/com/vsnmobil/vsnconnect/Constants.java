@@ -1,5 +1,5 @@
 /**
- * @author    Rajiv Manivannan <rajiv@contus.in>
+ * @author    Rajiv M.
  * @copyright  Copyright (C) 2014 VSNMobil. All rights reserved.
  * @license    http://www.apache.org/licenses/LICENSE-2.0
  */
@@ -34,4 +34,9 @@ public class Constants {
     public static final UUID CHAR_DETECTION_CONFIG = UUID.fromString("fffffff2-00f7-4000-b000-000000000000");// 0xFFF2
     public static final UUID CHAR_DETECTION_NOTIFY = UUID.fromString("fffffff4-00f7-4000-b000-000000000000");// 0xFFF4
     public static final byte[] ENABLE_KEY_DETECTION_VALUE = new byte[] { (byte) 0x01 };
+    
+    // To read the battery information form the Battery information service.
+    public static final UUID SERVICE_BATTERY_LEVEL = UUID.fromString("0000180F-0000-1000-8000-00805f9b34fb");
+    // Characteristic to read the battery status value.
+    public static final UUID CHAR_BATTERY_LEVEL = UUID.fromString("00002a19-0000-1000-8000-00805f9b34fb");
 }

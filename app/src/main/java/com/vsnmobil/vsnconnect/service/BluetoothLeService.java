@@ -1,5 +1,5 @@
 /**
- * @author    Rajiv Manivannan <rajiv@contus.in>
+ * @author    Rajiv M.
  * @copyright  Copyright (C) 2014 VSNMobil. All rights reserved.
  * @license    http://www.apache.org/licenses/LICENSE-2.0
  */
@@ -364,6 +364,10 @@ public class BluetoothLeService extends Service {
 						// Set notification for emergency key press and fall detection
 						setCharacteristicNotification(gatt,service.getCharacteristic(Constants.CHAR_DETECTION_NOTIFY),true);
 					}
+					if (Constants.SERVICE_BATTERY_LEVEL.equals(service.getUuid())) {
+						//Read the device battery percentage
+						readCharacteristic(gatt,service.getCharacteristic(Constants.CHAR_BATTERY_LEVEL));
+					}
 				}
 			} else {
 				// Service discovery failed close and disconnect the GATT object of the device.
@@ -376,12 +380,26 @@ public class BluetoothLeService extends Service {
 		@Override
 		public void onCharacteristicChanged(BluetoothGatt gatt,BluetoothGattCharacteristic characteristic) {
 			broadcastUpdate(ACTION_DATA_RESPONSE, characteristic.getUuid().toString(), "");
+//			Intent i = new Intent(Intent.ACTION_CAMERA_BUTTON);
+			final String keyValue = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 0).toString();
+
+			if (keyValue.equalsIgnoreCase("1")) {
+				Intent i = new Intent("com.android.music.musicservicecommand.togglepause");
+				i.putExtra("command", "togglepause");
+				sendBroadcast(i);
+			}
 		}
 
 		// Callback when the response available for Read Characteristic Request
 		@Override
 		public void onCharacteristicRead(BluetoothGatt gatt,BluetoothGattCharacteristic characteristic, int status) {
-
+			if (status == BluetoothGatt.GATT_SUCCESS) {
+				// Display received battery value.
+				if (Constants.CHAR_BATTERY_LEVEL.equals(characteristic.getUuid())) {
+					String batteryValue = characteristic.getIntValue( BluetoothGattCharacteristic.FORMAT_UINT8, 0).toString();
+					broadcastUpdate(ACTION_DATA_RESPONSE, "Battery level = "+batteryValue, status);
+				}
+			}
 		}
 
 		// Callback when the response available for Write Characteristic Request

@@ -1,6 +1,6 @@
 /**
  * @version    1.0
- * @author    Rajiv Manivannan <rajiv@contus.in>
+ * @author    Rajiv M.
  * @copyright  Copyright (C) 2014 VSNMobil. All rights reserved.
  * @license    http://www.apache.org/licenses/LICENSE-2.0
  */
