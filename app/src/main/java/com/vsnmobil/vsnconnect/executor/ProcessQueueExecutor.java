@@ -13,6 +13,9 @@ import java.util.TimerTask;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
+import android.nfc.Tag;
+import android.util.Log;
+
 /**
  * ProcessQueueExecutor.java 
  * 
@@ -21,7 +24,7 @@ import android.bluetooth.BluetoothGattDescriptor;
  * 
  */
 public class ProcessQueueExecutor extends Thread {
-
+	private final static String TAG = ProcessQueueExecutor.class.getSimpleName();
 	public final static int REQUEST_TYPE_READ_CHAR = 1;
 	public final static int REQUEST_TYPE_WRITE_CHAR = 2;
 	public final static int REQUEST_TYPE_WRITE_DESCRIPTOR = 3;
@@ -60,17 +63,26 @@ public class ProcessQueueExecutor extends Thread {
 				BluetoothGattCharacteristic characteristic = (BluetoothGattCharacteristic) parseObject;
 				try{
 					bluetoothGatt.readCharacteristic(characteristic);
-				}catch(Exception e){}
+				}catch(Exception e)
+				{
+					Log.e(TAG,"bluetooth exception:"+e.getMessage());
+				}
 			} else if (type == REQUEST_TYPE_WRITE_CHAR) {
 				BluetoothGattCharacteristic characteristic = (BluetoothGattCharacteristic) parseObject;
 				try{
 					bluetoothGatt.writeCharacteristic(characteristic);
-				}catch(Exception e){}
+				}catch(Exception e)
+				{
+					Log.e(TAG,"bluetooth exception:"+e.getMessage());
+				}
 			} else if (type == REQUEST_TYPE_WRITE_DESCRIPTOR) {
 				BluetoothGattDescriptor clientConfig = (BluetoothGattDescriptor) parseObject;
 				try{
 					bluetoothGatt.writeDescriptor(clientConfig);
-				}catch(Exception e){}
+				}catch(Exception e)
+				{
+					Log.e(TAG,"bluetooth exception:"+e.getMessage());
+				}
 			}
 
 			removeProcess(readWriteCharacteristic);

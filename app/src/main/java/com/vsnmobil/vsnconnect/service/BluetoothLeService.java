@@ -26,6 +26,7 @@ import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
+import android.util.Log;
 
 import com.vsnmobil.vsnconnect.Constants;
 import com.vsnmobil.vsnconnect.DeviceControlActivity;
@@ -75,7 +76,7 @@ public class BluetoothLeService extends Service {
 		//if blue tooth adapter is not initialized stop the service.
 		if(isBluetoothEnabled(this)==false){
 			stopForeground(false);
-			BluetoothLeService.this.stopSelf(); 
+			BluetoothLeService.this.stopSelf();
 		}
 		// To add and maintain the BluetoothGatt object of each BLE device.
 		bluetoothGattMap = new HashMap<String,BluetoothGatt>();
@@ -91,7 +92,7 @@ public class BluetoothLeService extends Service {
 		//if blue tooth adapter is not initialized stop the service.
 		if(isBluetoothEnabled(this)==false){
 			stopForeground(false);
-			BluetoothLeService.this.stopSelf(); 
+			BluetoothLeService.this.stopSelf();
 		}
 		 /* Invoking the default notification service */
         notifyBuilder =new NotificationCompat.Builder(this);
@@ -267,7 +268,7 @@ public class BluetoothLeService extends Service {
 				gatt.disconnect();
 				gatt.close();
 			} catch (Exception e) {
-				LogUtils.LOGI(TAG,e.getMessage()) ;  
+				LogUtils.LOGI(TAG,e.getMessage()) ;
 			}
 		}
 	}
@@ -326,7 +327,7 @@ public class BluetoothLeService extends Service {
 						gatt.disconnect();
 						gatt.close();
 					} catch (Exception e) {
-						LogUtils.LOGI(TAG,e.getMessage()) ;  
+						LogUtils.LOGI(TAG,e.getMessage()) ;
 					}
 					broadcastUpdate(ACTION_GATT_DISCONNECTED, deviceAddress,status);
 					break;
@@ -347,20 +348,23 @@ public class BluetoothLeService extends Service {
 				// Do APP verification as soon as service discovered.
 				try {
 					appVerification(gatt, getGattChar(gatt, Constants.SERVICE_VSN_SIMPLE_SERVICE,Constants.CHAR_APP_VERIFICATION),Constants.NEW_APP_VERIFICATION_VALUE);
-				} catch (Exception e) {}
+				} catch (Exception e)
+				{
+					Log.e(TAG,"exception with app verify:" + e.getMessage());
+				}
 
 				for (BluetoothGattService service : gatt.getServices()) {
 
 					if ((service == null) || (service.getUuid() == null)) {
 						continue;
 					}
-					
+
 					if (Constants.SERVICE_VSN_SIMPLE_SERVICE.equals(service.getUuid())) {
 						mCharVerification =  service.getCharacteristic(Constants.CHAR_APP_VERIFICATION);
-						// Writ Emergency key press 
-					
-							enableForDetect(gatt,service.getCharacteristic(Constants.CHAR_DETECTION_CONFIG),Constants.ENABLE_KEY_DETECTION_VALUE);
-					
+						// Write Emergency key press
+
+						enableForDetect(gatt,service.getCharacteristic(Constants.CHAR_DETECTION_CONFIG),Constants.ENABLE_KEY_DETECTION_VALUE);
+
 						// Set notification for emergency key press and fall detection
 						setCharacteristicNotification(gatt,service.getCharacteristic(Constants.CHAR_DETECTION_NOTIFY),true);
 					}
@@ -379,10 +383,39 @@ public class BluetoothLeService extends Service {
 		// CallBack when the response available for registered the notification( Battery Status, Fall Detect, Key Press)
 		@Override
 		public void onCharacteristicChanged(BluetoothGatt gatt,BluetoothGattCharacteristic characteristic) {
-			broadcastUpdate(ACTION_DATA_RESPONSE, characteristic.getUuid().toString(), "");
+
 //			Intent i = new Intent(Intent.ACTION_CAMERA_BUTTON);
 			final String keyValue = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 0).toString();
 
+			if(characteristic.getUuid().equals(Constants.CHAR_DETECTION_NOTIFY))
+			{
+				String pressValue = null;
+				if(keyValue == "1")
+				{
+					pressValue = "single press";
+				}else if (keyValue == "0")
+				{
+					pressValue = "single release";
+
+				}else if (keyValue == "3")
+				{
+					pressValue = "2-10 second press release";
+				}else if (keyValue == "4")
+				{
+					pressValue = "fallevent";
+				}else if (keyValue == "5")
+				{
+					pressValue = "high g event";
+				}else
+				{
+					pressValue = keyValue;
+				}
+
+				broadcastUpdate(ACTION_DATA_RESPONSE, "fffffff4="+pressValue, "");
+			}else
+			{
+				broadcastUpdate(ACTION_DATA_RESPONSE, characteristic.getUuid().toString() +"="+keyValue, "");
+			}
 			if (keyValue.equalsIgnoreCase("1")) {
 				Intent i = new Intent("com.android.music.musicservicecommand.togglepause");
 				i.putExtra("command", "togglepause");
@@ -398,19 +431,24 @@ public class BluetoothLeService extends Service {
 				if (Constants.CHAR_BATTERY_LEVEL.equals(characteristic.getUuid())) {
 					String batteryValue = characteristic.getIntValue( BluetoothGattCharacteristic.FORMAT_UINT8, 0).toString();
 					broadcastUpdate(ACTION_DATA_RESPONSE, "Battery level = "+batteryValue, status);
+				}else
+				{
+					Log.i(TAG,"received characteristic read:"+characteristic.getUuid().toString());
 				}
+
 			}
 		}
 
 		// Callback when the response available for Write Characteristic Request
 		@Override
 		public void onCharacteristicWrite(BluetoothGatt gatt,BluetoothGattCharacteristic characteristic, int status) {
-		broadcastUpdate(ACTION_DATA_RESPONSE,characteristic.getUuid().toString(), status);	
+			broadcastUpdate(ACTION_DATA_RESPONSE,characteristic.getUuid().toString(), status);
 		}
 
 		// Callback when the response available for Read Descriptor Request
 		@Override
 		public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor,int status) {
+			Log.i(TAG,"received descriptor read:"+descriptor.getUuid().toString());
 		}
 
 		// Callback when the response available for Write Descriptor Request
@@ -452,7 +490,7 @@ public class BluetoothLeService extends Service {
 	 * @param BluetoothGatt object of the device.
 	 * @param Service UUID.
 	 * @param Characteristic UUID.
-	 * @return BluetoothGattCharacteristic of the given service and Characteristic UUID.  
+	 * @return BluetoothGattCharacteristic of the given service and Characteristic UUID.
 	 */
 	public  BluetoothGattCharacteristic getGattChar(BluetoothGatt mGatt, UUID serviceuuid,UUID charectersticuuid) {
 		gattService = mGatt.getService(serviceuuid);
@@ -460,7 +498,7 @@ public class BluetoothLeService extends Service {
 	}
 
 	/**
-	 * To get the List of BluetoothGattCharacteristic from the given GATT object for Service UUID 
+	 * To get the List of BluetoothGattCharacteristic from the given GATT object for Service UUID
 	 * @param BluetoothGatt object of the device.
 	 * @param Service UUID.
 	 * @return List of BluetoothGattCharacteristic.
